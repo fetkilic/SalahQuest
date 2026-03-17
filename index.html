@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Salah Quest | Manevi Yolculuk</title>
+    
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --gold: #f3d47a;
+            --royal-blue: #1e293b;
+            --deep-space: #0f172a;
+            --accent: #38bdf8;
+            --success: #10b981;
+        }
+
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--deep-space); color: white; overflow-x: hidden; }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+            display: flex; justify-content: center; min-height: 100vh; padding: 15px; box-sizing: border-box;
+        }
+
+        #root { width: 100%; max-width: 450px; }
+
+        .glass-card {
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 30px; padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); margin-bottom: 20px;
+        }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        .app-title { font-family: 'Cinzel', serif; color: var(--gold); letter-spacing: 2px; margin: 0; font-size: 1.5rem; }
+        
+        .stats-bar { display: flex; justify-content: space-around; margin: 15px 0; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 10px; border: 1px solid var(--glass-border); }
+        .stat-item { text-align: center; }
+        .stat-value { display: block; color: var(--gold); font-weight: 600; font-size: 1.1rem; }
+        .stat-label { font-size: 0.6rem; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; }
+
+        .countdown-box { text-align: center; padding: 20px; border-radius: 20px; background: linear-gradient(180deg, rgba(243, 212, 122, 0.1) 0%, transparent 100%); margin-bottom: 20px; border: 1px solid rgba(243, 212, 122, 0.2); }
+        .next-salah-label { font-size: 0.8rem; color: var(--gold); text-transform: uppercase; margin-bottom: 5px; }
+        .timer { font-size: 2.2rem; font-weight: 300; letter-spacing: 2px; }
+
+        .prayer-list { display: flex; flex-direction: column; gap: 12px; }
+        .prayer-card {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px 20px; background: rgba(255,255,255,0.05); border-radius: 18px;
+            border: 1px solid var(--glass-border); transition: 0.3s;
+        }
+        .prayer-card.completed { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .prayer-info { display: flex; flex-direction: column; }
+        .prayer-name { font-weight: 600; font-size: 1rem; }
+        .prayer-time { font-size: 0.8rem; opacity: 0.6; }
+        
+        .check-btn {
+            width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--gold);
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+        }
+        .completed .check-btn { background: var(--success); border-color: var(--success); }
+
+        input { 
+            width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border);
+            background: rgba(255,255,255,0.1); color: white; outline: none; font-size: 14px; box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .btn { width: 100%; padding: 14px; border-radius: 15px; font-weight: 600; border: none; cursor: pointer; transition: 0.3s; font-family: 'Montserrat'; }
+        .btn-gold { background: var(--gold); color: var(--deep-space); box-shadow: 0 4px 15px rgba(243, 212, 122, 0.3); }
+
+        .lvl-container { margin-top: 10px; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .lvl-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s; }
+
+        .loading { text-align: center; animation: pulse 1.5s infinite; color: var(--gold); font-size: 0.8rem; margin: 20px 0; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const STORAGE_KEY = 'salah_quest_tr_v1';
+        const PRAYER_MAP = {
+            'Fajr': 'İmsak',
+            'Dhuhr': 'Öğle',
+            'Asr': 'İkindi',
+            'Maghrib': 'Akşam',
+            'Isha': 'Yatsı'
+        };
+        const PRAYER_KEYS = Object.keys(PRAYER_MAP);
+
+        function App() {
+            const [location, setLocation] = useState({ city: '', country: '' });
+            const [isConfigured, setIsConfigured] = useState(false);
+            const [prayerTimes, setPrayerTimes] = useState(null);
+            const [completed, setCompleted] = useState([]);
+            const [stats, setStats] = useState({ xp: 0, streak: 0, level: 1 });
+            const [nextSalah, setNextSalah] = useState({ name: '--', time: null });
+            const [countdown, setCountdown] = useState('--:--:--');
+
+            useEffect(() => {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    setLocation(data.location);
+                    setStats(data.stats || { xp: 0, streak: 0, level: 1 });
+                    const today = new Date().toDateString();
+                    setCompleted(data.completedToday?.date === today ? data.completedToday.list : []);
+                    setIsConfigured(true);
+                    fetchDiyanetTimes(data.location.city, data.location.country);
+                }
+            }, []);
+
+            useEffect(() => {
+                if (isConfigured) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        location, stats, completedToday: { date: new Date().toDateString(), list: completed }
+                    }));
+                }
+            }, [location, stats, completed, isConfigured]);
+
+            const fetchDiyanetTimes = async (city, country) => {
+                try {
+                    const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13&school=1`);
+                    const data = await res.json();
+                    if (data.data) {
+                        setPrayerTimes(data.data.timings);
+                    }
+                } catch (err) {
+                    alert("Diyanet verileri alınamadı. Lütfen şehir ve ülkeyi kontrol edin.");
+                }
+            };
+
+            useEffect(() => {
+                if (!prayerTimes) return;
+
+                const timer = setInterval(() => {
+                    const now = new Date();
+                    const times = PRAYER_KEYS.map(key => {
+                        const [h, m] = prayerTimes[key].split(':');
+                        const d = new Date();
+                        d.setHours(parseInt(h), parseInt(m), 0, 0);
+                        return { name: PRAYER_MAP[key], time: d };
+                    });
+
+                    let next = times.find(t => t.time > now);
+                    if (!next) {
+                        next = { ...times[0], time: new Date(times[0].time.getTime() + 86400000) };
+                    }
+
+                    setNextSalah(next);
+                    
+                    const diff = next.time - now;
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    setCountdown(`${h}s ${m}d ${s}sn`);
+                }, 1000);
+
+                return () => clearInterval(timer);
+            }, [prayerTimes]);
+
+            const togglePrayer = (name) => {
+                if (completed.includes(name)) return;
+                
+                const newCompleted = [...completed, name];
+                setCompleted(newCompleted);
+                
+                let newXp = stats.xp + 50;
+                let newLevel = stats.level;
+                if (newXp >= 250) {
+                    newXp = 0;
+                    newLevel++;
+                }
+                
+                const newStreak = (newCompleted.length === 5) ? stats.streak + 1 : stats.streak;
+                setStats({ ...stats, xp: newXp, level: newLevel, streak: newStreak });
+            };
+
+            if (!isConfigured) {
+                return (
+                    <div className="glass-card">
+                        <div className="header">
+                            <h1 className="app-title">SALAH QUEST</h1>
+                            <p style={{fontSize:'0.8rem', opacity:0.7}}>Diyanet Uyumlu Takip Sistemi</p>
+                        </div>
+                        <div style={{marginTop:'20px'}}>
+                            <input placeholder="Şehir (Örn: Istanbul)" value={location.city} onChange={e => setLocation({...location, city: e.target.value})} />
+                            <input placeholder="Ülke (Örn: Turkey)" value={location.country} onChange={e => setLocation({...location, country: e.target.value})} />
+                            <button className="btn btn-gold" onClick={() => { if(location.city && location.country) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>YOLCULUĞA BAŞLA</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <div className="glass-card">
+                        <div className="header">
+                            <h1 className="app-title">SALAH QUEST</h1>
+                            <div className="lvl-container">
+                                <div className="lvl-fill" style={{width: `${(stats.xp / 250) * 100}%`}}></div>
+                            </div>
+                        </div>
+
+                        <div className="stats-bar">
+                            <div className="stat-item">
+                                <span className="stat-label">Mertebe</span>
+                                <span className="stat-value">{stats.level}</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-label">Seri</span>
+                                <span className="stat-value">{stats.streak} 🔥</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-label">Tecrübe</span>
+                                <span className="stat-value">{stats.xp}/250</span>
+                            </div>
+                        </div>
+
+                        <div className="countdown-box">
+                            <div className="next-salah-label">Sıradaki: {nextSalah.name}</div>
+                            <div className="timer">{countdown}</div>
+                        </div>
+
+                        <div className="prayer-list">
+                            {prayerTimes ? PRAYER_KEYS.map(key => (
+                                <div key={key} className={`prayer-card ${completed.includes(PRAYER_MAP[key]) ? 'completed' : ''}`}>
+                                    <div className="prayer-info">
+                                        <span className="prayer-name">{PRAYER_MAP[key]}</span>
+                                        <span className="prayer-time">{prayerTimes[key]}</span>
+                                    </div>
+                                    <div className="check-btn" onClick={() => togglePrayer(PRAYER_MAP[key])}>
+                                        {completed.includes(PRAYER_MAP[key]) ? '✓' : ''}
+                                    </div>
+                                </div>
+                            )) : <div className="loading">Diyanet ile senkronize ediliyor...</div>}
+                        </div>
+                    </div>
+
+                    <div style={{textAlign:'center'}}>
+                        <button className="btn" style={{background:'transparent', color:'rgba(255,255,255,0.3)', fontSize:'10px'}} 
+                            onClick={() => {if(confirm("Tüm ilerleme sıfırlansın mı?")) {localStorage.removeItem(STORAGE_KEY); window.location.reload();}}}>
+                            VERİLERİ VE KONUMU SIFIRLA
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
