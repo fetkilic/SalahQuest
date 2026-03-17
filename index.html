@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Akıllı Kaza Sistemi v1.1.1</title>
+    <title>Salah Quest v1.1.3</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -60,14 +60,14 @@
         .prayer-card {
             display: flex; align-items: center; justify-content: space-between;
             padding: 15px 20px; background: rgba(0, 43, 78, 0.4); border-radius: 18px;
-            border: 1px solid var(--glass-border); transition: 0.3s ease; cursor: pointer;
+            border: 1px solid var(--glass-border); transition: 0.2s ease; cursor: pointer;
         }
         .prayer-card.completed { border-color: var(--gold); background: rgba(243, 212, 122, 0.15); }
         .prayer-card.locked { opacity: 0.4; border-style: dashed; }
         
         .check-btn {
             width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--gold);
-            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
         .completed .check-btn { background: var(--gold); color: var(--marine-deep); font-weight: bold; }
 
@@ -80,26 +80,24 @@
         .kaza-done-btn { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; cursor: pointer; font-weight: 600; }
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 18, 32, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); }
-        .modal { background: var(--marine-deep); border: 2px solid var(--gold); padding: 35px 25px; border-radius: 30px; text-align: center; max-width: 85%; }
+        .modal { background: var(--marine-deep); border: 2px solid var(--gold); padding: 30px; border-radius: 30px; text-align: center; max-width: 85%; }
         
         .btn-gold { background: var(--gold); color: var(--marine-deep); padding: 14px; border-radius: 15px; font-weight: 600; border: none; width: 100%; margin-top: 10px; cursor: pointer; }
-        
-        .lvl-container { margin-top: 10px; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
-        .lvl-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s; }
-
         .search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; }
         .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; }
         .dropdown-item { padding: 12px 15px; cursor: pointer; }
+        .lvl-container { margin-top: 10px; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .lvl-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
-        const APP_VERSION = "1.1.1";
-        const STORAGE_KEY = 'salah_quest_v11_smart';
+        const APP_VERSION = "1.1.3";
+        const STORAGE_KEY = 'salah_quest_v13_cache';
         const PRAYER_MAP = { 'Fajr': 'Sabah', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -118,24 +116,13 @@
             const [showDropdown, setShowDropdown] = useState(false);
             const [cities, setCities] = useState([]);
 
-            useEffect(() => {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    setLocation(data.location);
-                    setStats(data.stats || { xp: 0, streak: 0, level: 1 });
-                    setKazaList(data.kazaList || []);
-                    setCompleted(data.completedToday?.date === new Date().toDateString() ? data.completedToday.list : []);
-                    setIsConfigured(true);
-                    fetchDiyanetTimes(data.location.city, data.location.country);
-                }
-            }, []);
-
-            const updateStorage = (loc, st, comp, kaza) => {
+            const updateStorage = (loc, st, comp, kaza, times = prayerTimes) => {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
                     location: loc, stats: st,
                     completedToday: { date: new Date().toDateString(), list: comp },
-                    kazaList: kaza
+                    kazaList: kaza,
+                    cachedTimes: times,
+                    cacheDate: new Date().toDateString()
                 }));
             };
 
@@ -143,15 +130,54 @@
                 try {
                     const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13&school=0`);
                     const data = await res.json();
-                    if (data.data) setPrayerTimes(data.data.timings);
-                } catch (err) { console.error(err); }
+                    if (data.data) {
+                        setPrayerTimes(data.data.timings);
+                        return data.data.timings;
+                    }
+                } catch (err) { console.error("API Error"); }
+                return null;
             };
 
-            // DİNAMİK KAZA KONTROLÜ (VAKİT GEÇTİ Mİ?)
+            useEffect(() => {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    setLocation(data.location);
+                    setStats(data.stats || { xp: 0, streak: 0, level: 1 });
+                    setKazaList(data.kazaList || []);
+                    
+                    const today = new Date().toDateString();
+                    
+                    // CACHE KONTROLÜ
+                    if (data.cachedTimes && data.cacheDate === today) {
+                        setPrayerTimes(data.cachedTimes);
+                    } else {
+                        fetchDiyanetTimes(data.location.city, data.location.country).then(times => {
+                            if (times) setPrayerTimes(times);
+                        });
+                    }
+
+                    // GÜN DEĞİŞİMİ KONTROLÜ
+                    if (data.completedToday?.date && data.completedToday.date !== today) {
+                        const missed = [];
+                        Object.values(PRAYER_MAP).forEach(pName => {
+                            if (!data.completedToday.list.includes(pName)) missed.push(`${data.completedToday.date} ${pName}`);
+                        });
+                        const newKaza = [...missed, ...(data.kazaList || [])];
+                        setKazaList(newKaza);
+                        setCompleted([]);
+                        updateStorage(data.location, data.stats, [], newKaza, data.cachedTimes);
+                    } else {
+                        setCompleted(data.completedToday?.list || []);
+                    }
+                    setIsConfigured(true);
+                }
+            }, []);
+
+            // OTOMATİK KAZA DENETÇİSİ
             useEffect(() => {
                 if (!prayerTimes || !isConfigured) return;
-
-                const checkInterval = setInterval(() => {
+                const interval = setInterval(() => {
                     const now = new Date();
                     const todayStr = now.toDateString();
                     let updatedKaza = [...kazaList];
@@ -159,34 +185,21 @@
 
                     PRAYER_ORDER.forEach((key, index) => {
                         const pName = PRAYER_MAP[key];
-                        // Vakit çıkış saatini bul (Sabah için Güneş, diğerleri için bir sonraki vakit)
-                        let expiryTimeStr = (key === 'Fajr') ? prayerTimes['Sunrise'] : prayerTimes[PRAYER_ORDER[index + 1]];
-                        
-                        // Yatsı için gün sonu baz alınır (Ertesi gün sabah imsak)
-                        if (key === 'Isha') expiryTimeStr = "23:59"; 
+                        let expiryStr = (key === 'Fajr') ? prayerTimes['Sunrise'] : prayerTimes[PRAYER_ORDER[index+1]];
+                        if (key === 'Isha') expiryStr = "23:59";
 
-                        if (expiryTimeStr) {
-                            const [h, m] = expiryTimeStr.split(':');
-                            const expiryDate = new Date();
-                            expiryDate.setHours(parseInt(h), parseInt(m), 0, 0);
-
-                            const kazaItemName = `${todayStr} ${pName}`;
-                            
-                            // Eğer vakit geçtiyse, henüz tamamlanmadıysa VE kaza listesinde yoksa ekle
-                            if (now > expiryDate && !completed.includes(pName) && !updatedKaza.includes(kazaItemName)) {
-                                updatedKaza.push(kazaItemName);
-                                changed = true;
+                        if (expiryStr) {
+                            const [h, m] = expiryStr.split(':');
+                            const expiry = new Date(); expiry.setHours(parseInt(h), parseInt(m), 0, 0);
+                            const kazaId = `${todayStr} ${pName}`;
+                            if (now > expiry && !completed.includes(pName) && !updatedKaza.includes(kazaId)) {
+                                updatedKaza.push(kazaId); changed = true;
                             }
                         }
                     });
-
-                    if (changed) {
-                        setKazaList(updatedKaza);
-                        updateStorage(location, stats, completed, updatedKaza);
-                    }
-                }, 10000); // 10 saniyede bir kontrol et
-
-                return () => clearInterval(checkInterval);
+                    if (changed) { setKazaList(updatedKaza); updateStorage(location, stats, completed, updatedKaza); }
+                }, 30000);
+                return () => clearInterval(interval);
             }, [prayerTimes, completed, kazaList, isConfigured]);
 
             const isVakitGirdi = (key) => {
@@ -200,48 +213,49 @@
                 const pName = PRAYER_MAP[key];
                 let newComp = [...completed];
                 let {xp, level, streak} = stats;
-                const todayStr = new Date().toDateString();
-                const kazaItemName = `${todayStr} ${pName}`;
+                const kazaId = `${new Date().toDateString()} ${pName}`;
 
                 if (!completed.includes(pName) && !isVakitGirdi(key)) {
                     setPopup({ msg: "Vakit henüz girmedi! ⏳" });
-                    setTimeout(() => setPopup(null), 2000);
-                    return;
+                    setTimeout(() => setPopup(null), 2000); return;
                 }
 
                 if (completed.includes(pName)) {
                     newComp = newComp.filter(i => i !== pName);
                     xp = Math.max(0, xp - 50);
                 } else {
-                    newComp.push(pName);
-                    xp += 50;
-                    // EĞER KAZA LİSTESİNDEYSE OTOMATİK SİL
-                    const newKaza = kazaList.filter(k => k !== kazaItemName);
+                    newComp.push(pName); xp += 50;
+                    const newKaza = kazaList.filter(k => k !== kazaId);
                     setKazaList(newKaza);
-                    updateStorage(location, {xp, level, streak}, newComp, newKaza);
+                    if (newComp.length === 5) { setPopup({ msg: "MAŞALLAH! 🎉\nGünü tamamladın." }); streak++; }
                 }
-                
                 if(xp >= 250) { xp = 0; level++; }
                 setStats({xp, level, streak}); setCompleted(newComp);
                 updateStorage(location, {xp, level, streak}, newComp, kazaList);
             };
 
             const solveKaza = (idx) => {
+                const kazaItem = kazaList[idx];
                 const newList = [...kazaList];
                 newList.splice(idx, 1);
                 let {xp, level, streak} = stats;
-                xp += 1;
-                if(xp >= 250) { xp = 0; level++; }
-                setKazaList(newList);
-                setStats({xp, level, streak});
-                updateStorage(location, {xp, level, streak}, completed, newList);
+                xp += 1; if(xp >= 250) { xp = 0; level++; }
+                const todayStr = new Date().toDateString();
+                let newComp = [...completed];
+                if (kazaItem.startsWith(todayStr)) {
+                    const pName = kazaItem.replace(todayStr + " ", "");
+                    if (!newComp.includes(pName)) {
+                        newComp.push(pName); if (newComp.length === 5) streak++;
+                    }
+                }
+                setKazaList(newList); setCompleted(newComp); setStats({xp, level, streak});
+                updateStorage(location, {xp, level, streak}, newComp, newList);
             };
 
             useEffect(() => {
                 if (location.country && setupStep === 2) {
                     fetch(`https://countriesnow.space/api/v0.1/countries/cities`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ country: location.country })
                     }).then(res => res.json()).then(res => setCities(res.data || []));
                 }
@@ -274,7 +288,7 @@
                                     </div>
                                 )}
                             </div>
-                            <button className="btn-gold" onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>İLERİ</button>
+                            <button className="btn-gold" onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country).then(t => { if(t) updateStorage(location, stats, [], [], t); }); } }}>İLERİ</button>
                         </div>
                     </div>
                 );
@@ -284,7 +298,7 @@
                 <div>
                     {popup && <div className="overlay" onClick={() => setPopup(null)}><div className="modal"><h2>{popup.msg}</h2></div></div>}
                     <div className="glass-card">
-                        <div className="top-nav"><span className="version-tag">v{APP_VERSION}</span><button className="refresh-btn" onClick={() => window.location.reload(true)}>↻</button></div>
+                        <div className="top-nav"><span className="version-tag">v{APP_VERSION}</span><button className="refresh-btn" onClick={() => { localStorage.removeItem(STORAGE_KEY); window.location.reload(); }}>↻</button></div>
                         <div className="header"><h1 className="app-title">SALAH QUEST</h1>
                             <div className="lvl-container"><div className="lvl-fill" style={{width: `${(stats.xp / 250) * 100}%`}}></div></div>
                         </div>
@@ -300,11 +314,11 @@
                                     <div className="prayer-info"><span className="prayer-name">{PRAYER_MAP[key]}</span> <small style={{opacity:0.6}}>{prayerTimes[key]}</small></div>
                                     <div className="check-btn">{completed.includes(PRAYER_MAP[key]) ? '✓' : ''}</div>
                                 </div>
-                            )) : <div>Yükleniyor...</div>}
+                            )) : <div style={{textAlign:'center', padding:'20px'}}>Yükleniyor...</div>}
                         </div>
 
                         <div className="kaza-section">
-                            <div className="section-title">⏳ Kaza Namazları ({kazaList.length})</div>
+                            <div className="section-title">⏳ Kaza Listesi ({kazaList.length})</div>
                             <div className="kaza-list">
                                 {kazaList.length > 0 ? kazaList.map((item, idx) => (
                                     <div key={idx} className="kaza-item">
