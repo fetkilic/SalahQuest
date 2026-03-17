@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Manevi Yolculuk</title>
+    <title>Salah Quest | Diyanet Uyumlu</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -38,7 +38,7 @@
 
         .glass-card {
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 30px; padding: 20px;
+            border: 1px solid var(--glass-border); border-radius: 30px; padding: 25px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); margin-bottom: 20px;
         }
 
@@ -71,10 +71,12 @@
         }
         .completed .check-btn { background: var(--success); border-color: var(--success); }
 
+        .setup-step { display: flex; flex-direction: column; gap: 15px; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         input { 
             width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border);
             background: rgba(255,255,255,0.1); color: white; outline: none; font-size: 14px; box-sizing: border-box;
-            margin-bottom: 10px;
         }
         .btn { width: 100%; padding: 14px; border-radius: 15px; font-weight: 600; border: none; cursor: pointer; transition: 0.3s; font-family: 'Montserrat'; }
         .btn-gold { background: var(--gold); color: var(--deep-space); box-shadow: 0 4px 15px rgba(243, 212, 122, 0.3); }
@@ -92,17 +94,12 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        const STORAGE_KEY = 'salah_quest_tr_v1';
-        const PRAYER_MAP = {
-            'Fajr': 'İmsak',
-            'Dhuhr': 'Öğle',
-            'Asr': 'İkindi',
-            'Maghrib': 'Akşam',
-            'Isha': 'Yatsı'
-        };
+        const STORAGE_KEY = 'salah_quest_v2_diyanet';
+        const PRAYER_MAP = { 'Fajr': 'İmsak', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_KEYS = Object.keys(PRAYER_MAP);
 
         function App() {
+            const [setupStep, setSetupStep] = useState(1);
             const [location, setLocation] = useState({ city: '', country: '' });
             const [isConfigured, setIsConfigured] = useState(false);
             const [prayerTimes, setPrayerTimes] = useState(null);
@@ -134,13 +131,15 @@
 
             const fetchDiyanetTimes = async (city, country) => {
                 try {
-                    const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13&school=1`);
+                    // Method 13 = Diyanet
+                    // School 0 = Standard (Shafi/Diyanet Ikindi vakti için bu gereklidir)
+                    const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13&school=0`);
                     const data = await res.json();
                     if (data.data) {
                         setPrayerTimes(data.data.timings);
                     }
                 } catch (err) {
-                    alert("Diyanet verileri alınamadı. Lütfen şehir ve ülkeyi kontrol edin.");
+                    alert("Vakitler alınamadı. Konum bilgilerini kontrol edin.");
                 }
             };
 
@@ -175,17 +174,11 @@
 
             const togglePrayer = (name) => {
                 if (completed.includes(name)) return;
-                
                 const newCompleted = [...completed, name];
                 setCompleted(newCompleted);
-                
                 let newXp = stats.xp + 50;
                 let newLevel = stats.level;
-                if (newXp >= 250) {
-                    newXp = 0;
-                    newLevel++;
-                }
-                
+                if (newXp >= 250) { newXp = 0; newLevel++; }
                 const newStreak = (newCompleted.length === 5) ? stats.streak + 1 : stats.streak;
                 setStats({ ...stats, xp: newXp, level: newLevel, streak: newStreak });
             };
@@ -195,13 +188,25 @@
                     <div className="glass-card">
                         <div className="header">
                             <h1 className="app-title">SALAH QUEST</h1>
-                            <p style={{fontSize:'0.8rem', opacity:0.7}}>Diyanet Uyumlu Takip Sistemi</p>
+                            <p style={{fontSize:'0.8rem', opacity:0.7}}>Diyanet Uyumlu Takip</p>
                         </div>
-                        <div style={{marginTop:'20px'}}>
-                            <input placeholder="Şehir (Örn: Istanbul)" value={location.city} onChange={e => setLocation({...location, city: e.target.value})} />
-                            <input placeholder="Ülke (Örn: Turkey)" value={location.country} onChange={e => setLocation({...location, country: e.target.value})} />
-                            <button className="btn btn-gold" onClick={() => { if(location.city && location.country) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>YOLCULUĞA BAŞLA</button>
-                        </div>
+                        
+                        {setupStep === 1 ? (
+                            <div className="setup-step">
+                                <label style={{fontSize:'0.85rem', color: 'var(--gold)'}}>Hangi Ülkedesin?</label>
+                                <input placeholder="Örn: Netherlands" value={location.country} onChange={e => setLocation({...location, country: e.target.value})} />
+                                <button className="btn btn-gold" onClick={() => location.country && setSetupStep(2)}>İLERİ</button>
+                            </div>
+                        ) : (
+                            <div className="setup-step">
+                                <label style={{fontSize:'0.85rem', color: 'var(--gold)'}}>{location.country} - Hangi Şehir?</label>
+                                <input placeholder="Örn: Dordrecht" autoFocus value={location.city} onChange={e => setLocation({...location, city: e.target.value})} />
+                                <div style={{display:'flex', gap:'10px'}}>
+                                    <button className="btn" style={{background:'rgba(255,255,255,0.1)', color:'white'}} onClick={() => setSetupStep(1)}>GERİ</button>
+                                    <button className="btn btn-gold" onClick={() => { if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>BAŞLA</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -217,18 +222,9 @@
                         </div>
 
                         <div className="stats-bar">
-                            <div className="stat-item">
-                                <span className="stat-label">Mertebe</span>
-                                <span className="stat-value">{stats.level}</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-label">Seri</span>
-                                <span className="stat-value">{stats.streak} 🔥</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-label">Tecrübe</span>
-                                <span className="stat-value">{stats.xp}/250</span>
-                            </div>
+                            <div className="stat-item"><span className="stat-label">Mertebe</span><span className="stat-value">{stats.level}</span></div>
+                            <div className="stat-item"><span className="stat-label">Seri</span><span className="stat-value">{stats.streak} 🔥</span></div>
+                            <div className="stat-item"><span className="stat-label">Tecrübe</span><span className="stat-value">{stats.xp}/250</span></div>
                         </div>
 
                         <div className="countdown-box">
@@ -247,14 +243,14 @@
                                         {completed.includes(PRAYER_MAP[key]) ? '✓' : ''}
                                     </div>
                                 </div>
-                            )) : <div className="loading">Diyanet ile senkronize ediliyor...</div>}
+                            )) : <div className="loading">Vakitler Diyanet'ten alınıyor...</div>}
                         </div>
                     </div>
 
                     <div style={{textAlign:'center'}}>
                         <button className="btn" style={{background:'transparent', color:'rgba(255,255,255,0.3)', fontSize:'10px'}} 
                             onClick={() => {if(confirm("Tüm ilerleme sıfırlansın mı?")) {localStorage.removeItem(STORAGE_KEY); window.location.reload();}}}>
-                            VERİLERİ VE KONUMU SIFIRLA
+                            KONUMU VE VERİLERİ SIFIRLA
                         </button>
                     </div>
                 </div>
