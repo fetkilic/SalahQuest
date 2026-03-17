@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Pro Sync v1.1.5</title>
+    <title>Salah Quest | Full Sync v1.1.6</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -96,8 +96,8 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        const APP_VERSION = "1.1.5";
-        const STORAGE_KEY = 'salah_quest_v15_final';
+        const APP_VERSION = "1.1.6";
+        const STORAGE_KEY = 'salah_quest_v16_final_sync';
         const PRAYER_MAP = { 'Fajr': 'Sabah', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -168,7 +168,6 @@
                     setLocation(data.location);
                     setStats(data.stats || { xp: 0, streak: 0, level: 1 });
                     const today = new Date().toDateString();
-                    
                     let currentTimes = (data.cachedTimes && data.cacheDate === today) ? data.cachedTimes : null;
                     if (currentTimes) setPrayerTimes(currentTimes);
                     else fetchDiyanetTimes(data.location.city, data.location.country).then(t => currentTimes = t);
@@ -183,7 +182,6 @@
                         });
                         currentComp = [];
                     }
-                    
                     const check = performKazaCheck(currentTimes, currentComp, currentKaza);
                     setCompleted(currentComp); setKazaList(check.updatedKaza); setIsConfigured(true);
                     updateStorage(data.location, data.stats, currentComp, check.updatedKaza, currentTimes);
@@ -218,44 +216,28 @@
                 const now = new Date();
 
                 if (!completed.includes(pName)) {
-                    // Vakit giriş kontrolü
                     const [h, m] = prayerTimes[key].split(':');
                     const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0, 0);
                     if (now < target) {
                         setPopup({ msg: "Vakit henüz girmedi! ⏳" });
                         setTimeout(() => setPopup(null), 2000); return;
                     }
-
-                    // Puanlama Mantığı
                     const expiry = getExpiryDate(key);
                     const isVaktiGecti = now > expiry;
+                    let earnedXp = (key === 'Fajr') ? (isVaktiGecti ? 1 : 100) : (isVaktiGecti ? 1 : 50);
                     
-                    let earnedXp = 50; // Standart
-                    if (key === 'Fajr') {
-                        earnedXp = isVaktiGecti ? 1 : 100;
-                    } else {
-                        earnedXp = isVaktiGecti ? 1 : 50;
-                    }
-
-                    newComp.push(pName);
-                    xp += earnedXp;
-
+                    newComp.push(pName); xp += earnedXp;
+                    // ANA EKRAN İŞARETLENDİĞİNDE KAZADAN SİL
                     const newKaza = kazaList.filter(k => k !== kazaId);
                     setKazaList(newKaza);
                     if (newComp.length === 5) { setPopup({ msg: "MAŞALLAH! 🎉\nGünü tamamladın." }); streak++; }
                 } else {
-                    // Geri alma işlemi (Puanlama aynı mantıkla düşülür)
                     newComp = newComp.filter(i => i !== pName);
-                    // Basitleştirme: Geri almada 50 düşer (Sabah ise vaktine göre 100 veya 1 düşer)
                     const expiry = getExpiryDate(key);
-                    const wasVaktiGecti = now > expiry; // Basit varsayım: geri alındığı anki vakte bakar
-                    let penalty = 50;
-                    if (key === 'Fajr') penalty = wasVaktiGecti ? 1 : 100;
-                    else penalty = wasVaktiGecti ? 1 : 50;
-                    
+                    const wasVaktiGecti = now > expiry;
+                    let penalty = (key === 'Fajr') ? (wasVaktiGecti ? 1 : 100) : (wasVaktiGecti ? 1 : 50);
                     xp = Math.max(0, xp - penalty);
                 }
-                
                 if(xp >= 250) { xp = 0; level++; }
                 setStats({xp, level, streak}); setCompleted(newComp);
                 updateStorage(location, {xp, level, streak}, newComp, kazaList);
@@ -266,8 +248,7 @@
                 const newList = [...kazaList];
                 newList.splice(idx, 1);
                 let {xp, level, streak} = stats;
-                xp += 1; // Kaza telafisi her zaman 1 XP
-                if(xp >= 250) { xp = 0; level++; }
+                xp += 1; if(xp >= 250) { xp = 0; level++; }
                 const todayStr = new Date().toDateString();
                 let newComp = [...completed];
                 if (kazaItem.startsWith(todayStr)) {
@@ -335,26 +316,20 @@
                             <div className="stat-item"><span className="stat-label">Seri</span><span className="stat-value">{stats.streak} 🔥</span></div>
                             <div className="stat-item"><span className="stat-label">Tecrübe</span><span className="stat-value">{stats.xp}/250</span></div>
                         </div>
-                        
                         <div className="prayer-list">
                             {prayerTimes ? PRAYER_ORDER.map(key => {
                                 const now = new Date();
                                 const [h, m] = prayerTimes[key].split(':');
                                 const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0, 0);
                                 const isLocked = now < target && !completed.includes(PRAYER_MAP[key]);
-
                                 return (
                                     <div key={key} className={`prayer-card ${completed.includes(PRAYER_MAP[key]) ? 'completed' : ''} ${isLocked ? 'locked' : ''}`} onClick={() => togglePrayer(key)}>
-                                        <div className="prayer-info">
-                                            <span className="prayer-name">{PRAYER_MAP[key]}</span> 
-                                            <small style={{opacity:0.6}}>{prayerTimes[key]}</small>
-                                        </div>
+                                        <div className="prayer-info"><span className="prayer-name">{PRAYER_MAP[key]}</span> <small style={{opacity:0.6}}>{prayerTimes[key]}</small></div>
                                         <div className="check-btn">{completed.includes(PRAYER_MAP[key]) ? '✓' : ''}</div>
                                     </div>
                                 );
                             }) : <div style={{textAlign:'center', padding:'20px'}}>Yükleniyor...</div>}
                         </div>
-
                         <div className="kaza-section">
                             <div className="section-title">⏳ Kaza Listesi ({kazaList.length})</div>
                             <div className="kaza-list">
