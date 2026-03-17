@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Full Sync v1.1.6</title>
+    <title>Salah Quest | Instant Sync v1.1.7</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -85,7 +85,7 @@
         .btn-gold { background: var(--gold); color: var(--marine-deep); padding: 14px; border-radius: 15px; font-weight: 600; border: none; width: 100%; margin-top: 10px; cursor: pointer; }
         .search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; }
         .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; }
-        .dropdown-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .dropdown-item { padding: 12px 15px; cursor: pointer; }
         .lvl-container { margin-top: 10px; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
         .lvl-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s; }
     </style>
@@ -96,8 +96,8 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        const APP_VERSION = "1.1.6";
-        const STORAGE_KEY = 'salah_quest_v16_final_sync';
+        const APP_VERSION = "1.1.7";
+        const STORAGE_KEY = 'salah_quest_v17_instant_sync';
         const PRAYER_MAP = { 'Fajr': 'Sabah', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -210,9 +210,11 @@
 
             const togglePrayer = (key) => {
                 const pName = PRAYER_MAP[key];
+                const todayStr = new Date().toDateString();
+                const kazaId = `${todayStr} ${pName}`;
                 let newComp = [...completed];
+                let newKaza = [...kazaList];
                 let {xp, level, streak} = stats;
-                const kazaId = `${new Date().toDateString()} ${pName}`;
                 const now = new Date();
 
                 if (!completed.includes(pName)) {
@@ -227,9 +229,9 @@
                     let earnedXp = (key === 'Fajr') ? (isVaktiGecti ? 1 : 100) : (isVaktiGecti ? 1 : 50);
                     
                     newComp.push(pName); xp += earnedXp;
-                    // ANA EKRAN İŞARETLENDİĞİNDE KAZADAN SİL
-                    const newKaza = kazaList.filter(k => k !== kazaId);
-                    setKazaList(newKaza);
+                    // KESİN SENKRONİZASYON: Listeden anında uçur
+                    newKaza = newKaza.filter(k => k !== kazaId);
+                    
                     if (newComp.length === 5) { setPopup({ msg: "MAŞALLAH! 🎉\nGünü tamamladın." }); streak++; }
                 } else {
                     newComp = newComp.filter(i => i !== pName);
@@ -239,8 +241,8 @@
                     xp = Math.max(0, xp - penalty);
                 }
                 if(xp >= 250) { xp = 0; level++; }
-                setStats({xp, level, streak}); setCompleted(newComp);
-                updateStorage(location, {xp, level, streak}, newComp, kazaList);
+                setStats({xp, level, streak}); setCompleted(newComp); setKazaList(newKaza);
+                updateStorage(location, {xp, level, streak}, newComp, newKaza);
             };
 
             const solveKaza = (idx) => {
