@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest v1.1.3</title>
+    <title>Salah Quest | Pro Sync v1.1.4</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -74,7 +74,7 @@
         .kaza-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
         .section-title { font-size: 0.9rem; color: var(--gold); margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .kaza-item { 
-            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.15);
+            background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.2);
             padding: 12px 15px; border-radius: 15px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
         }
         .kaza-done-btn { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; cursor: pointer; font-weight: 600; }
@@ -85,7 +85,7 @@
         .btn-gold { background: var(--gold); color: var(--marine-deep); padding: 14px; border-radius: 15px; font-weight: 600; border: none; width: 100%; margin-top: 10px; cursor: pointer; }
         .search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; }
         .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; }
-        .dropdown-item { padding: 12px 15px; cursor: pointer; }
+        .dropdown-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .lvl-container { margin-top: 10px; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
         .lvl-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s; }
     </style>
@@ -96,8 +96,8 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        const APP_VERSION = "1.1.3";
-        const STORAGE_KEY = 'salah_quest_v13_cache';
+        const APP_VERSION = "1.1.4";
+        const STORAGE_KEY = 'salah_quest_v14_pro';
         const PRAYER_MAP = { 'Fajr': 'Sabah', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -116,7 +116,7 @@
             const [showDropdown, setShowDropdown] = useState(false);
             const [cities, setCities] = useState([]);
 
-            const updateStorage = (loc, st, comp, kaza, times = prayerTimes) => {
+            const updateStorage = useCallback((loc, st, comp, kaza, times = prayerTimes) => {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
                     location: loc, stats: st,
                     completedToday: { date: new Date().toDateString(), list: comp },
@@ -124,7 +124,7 @@
                     cachedTimes: times,
                     cacheDate: new Date().toDateString()
                 }));
-            };
+            }, [prayerTimes]);
 
             const fetchDiyanetTimes = async (city, country) => {
                 try {
@@ -138,69 +138,76 @@
                 return null;
             };
 
+            const performKazaCheck = useCallback((currentTimes, currentComp, currentKaza) => {
+                if (!currentTimes) return { updatedKaza: currentKaza, changed: false };
+                const now = new Date();
+                const todayStr = now.toDateString();
+                let updatedKaza = [...currentKaza];
+                let changed = false;
+
+                PRAYER_ORDER.forEach((key, index) => {
+                    const pName = PRAYER_MAP[key];
+                    let expiryStr = (key === 'Fajr') ? currentTimes['Sunrise'] : (index < PRAYER_ORDER.length - 1 ? currentTimes[PRAYER_ORDER[index+1]] : "23:59");
+                    
+                    if (expiryStr) {
+                        const [h, m] = expiryStr.split(':');
+                        const expiry = new Date(); 
+                        expiry.setHours(parseInt(h), parseInt(m), 0, 0);
+                        const kazaId = `${todayStr} ${pName}`;
+                        if (now > expiry && !currentComp.includes(pName) && !updatedKaza.includes(kazaId)) {
+                            updatedKaza.push(kazaId);
+                            changed = true;
+                        }
+                    }
+                });
+                return { updatedKaza, changed };
+            }, []);
+
             useEffect(() => {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const data = JSON.parse(saved);
                     setLocation(data.location);
                     setStats(data.stats || { xp: 0, streak: 0, level: 1 });
-                    setKazaList(data.kazaList || []);
-                    
                     const today = new Date().toDateString();
                     
-                    // CACHE KONTROLÜ
-                    if (data.cachedTimes && data.cacheDate === today) {
-                        setPrayerTimes(data.cachedTimes);
-                    } else {
-                        fetchDiyanetTimes(data.location.city, data.location.country).then(times => {
-                            if (times) setPrayerTimes(times);
-                        });
-                    }
+                    let currentTimes = (data.cachedTimes && data.cacheDate === today) ? data.cachedTimes : null;
+                    if (currentTimes) setPrayerTimes(currentTimes);
+                    else fetchDiyanetTimes(data.location.city, data.location.country).then(t => currentTimes = t);
 
-                    // GÜN DEĞİŞİMİ KONTROLÜ
+                    let currentComp = (data.completedToday?.date === today) ? data.completedToday.list : [];
+                    let currentKaza = data.kazaList || [];
+
+                    // Dünden kalanları kaza listesine aktar
                     if (data.completedToday?.date && data.completedToday.date !== today) {
-                        const missed = [];
                         Object.values(PRAYER_MAP).forEach(pName => {
-                            if (!data.completedToday.list.includes(pName)) missed.push(`${data.completedToday.date} ${pName}`);
+                            const oldId = `${data.completedToday.date} ${pName}`;
+                            if (!data.completedToday.list.includes(pName) && !currentKaza.includes(oldId)) {
+                                currentKaza.push(oldId);
+                            }
                         });
-                        const newKaza = [...missed, ...(data.kazaList || [])];
-                        setKazaList(newKaza);
-                        setCompleted([]);
-                        updateStorage(data.location, data.stats, [], newKaza, data.cachedTimes);
-                    } else {
-                        setCompleted(data.completedToday?.list || []);
+                        currentComp = [];
                     }
+                    
+                    const check = performKazaCheck(currentTimes, currentComp, currentKaza);
+                    setCompleted(currentComp);
+                    setKazaList(check.updatedKaza);
                     setIsConfigured(true);
+                    updateStorage(data.location, data.stats, currentComp, check.updatedKaza, currentTimes);
                 }
-            }, []);
+            }, [performKazaCheck, updateStorage]);
 
-            // OTOMATİK KAZA DENETÇİSİ
             useEffect(() => {
                 if (!prayerTimes || !isConfigured) return;
                 const interval = setInterval(() => {
-                    const now = new Date();
-                    const todayStr = now.toDateString();
-                    let updatedKaza = [...kazaList];
-                    let changed = false;
-
-                    PRAYER_ORDER.forEach((key, index) => {
-                        const pName = PRAYER_MAP[key];
-                        let expiryStr = (key === 'Fajr') ? prayerTimes['Sunrise'] : prayerTimes[PRAYER_ORDER[index+1]];
-                        if (key === 'Isha') expiryStr = "23:59";
-
-                        if (expiryStr) {
-                            const [h, m] = expiryStr.split(':');
-                            const expiry = new Date(); expiry.setHours(parseInt(h), parseInt(m), 0, 0);
-                            const kazaId = `${todayStr} ${pName}`;
-                            if (now > expiry && !completed.includes(pName) && !updatedKaza.includes(kazaId)) {
-                                updatedKaza.push(kazaId); changed = true;
-                            }
-                        }
-                    });
-                    if (changed) { setKazaList(updatedKaza); updateStorage(location, stats, completed, updatedKaza); }
-                }, 30000);
+                    const check = performKazaCheck(prayerTimes, completed, kazaList);
+                    if (check.changed) {
+                        setKazaList(check.updatedKaza);
+                        updateStorage(location, stats, completed, check.updatedKaza);
+                    }
+                }, 10000);
                 return () => clearInterval(interval);
-            }, [prayerTimes, completed, kazaList, isConfigured]);
+            }, [prayerTimes, completed, kazaList, isConfigured, performKazaCheck, location, stats, updateStorage]);
 
             const isVakitGirdi = (key) => {
                 if (!prayerTimes) return false;
@@ -314,7 +321,7 @@
                                     <div className="prayer-info"><span className="prayer-name">{PRAYER_MAP[key]}</span> <small style={{opacity:0.6}}>{prayerTimes[key]}</small></div>
                                     <div className="check-btn">{completed.includes(PRAYER_MAP[key]) ? '✓' : ''}</div>
                                 </div>
-                            )) : <div style={{textAlign:'center', padding:'20px'}}>Yükleniyor...</div>}
+                            )) : <div style={{textAlign:'center', padding:'20px'}}>Vakitler yükleniyor...</div>}
                         </div>
 
                         <div className="kaza-section">
