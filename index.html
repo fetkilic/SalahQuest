@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Countdown v1.1.9</title>
+    <title>Salah Quest | Active Counter v1.2.0</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -47,14 +47,13 @@
         .top-nav { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 15px; }
         .version-tag { font-size: 0.6rem; color: var(--gold); padding: 3px 8px; border-radius: 8px; border: 1px solid rgba(243, 212, 122, 0.2); }
         .refresh-btn { background: none; border: 1px solid var(--glass-border); color: var(--gold); border-radius: 8px; cursor: pointer; padding: 3px 6px; font-size: 10px; transition: 0.3s; }
-        .refresh-btn:active { transform: rotate(180deg); }
 
         .header { text-align: center; margin-bottom: 20px; }
         .app-title { font-family: 'Cinzel', serif; color: var(--gold); letter-spacing: 2px; margin: 0; font-size: 1.5rem; text-shadow: 0 0 10px rgba(243, 212, 122, 0.3); }
         
-        .countdown-container { text-align: center; margin: 10px 0 20px 0; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 10px; border: 1px solid rgba(243, 212, 122, 0.1); }
-        .countdown-label { font-size: 0.65rem; text-transform: uppercase; opacity: 0.6; letter-spacing: 1px; margin-bottom: 5px; display: block; }
-        .countdown-timer { font-family: 'Cinzel', serif; font-size: 1.6rem; color: var(--gold); font-weight: 700; }
+        .countdown-container { text-align: center; margin: 10px 0 20px 0; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 15px; border: 1px solid rgba(243, 212, 122, 0.15); box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
+        .countdown-label { font-size: 0.65rem; text-transform: uppercase; opacity: 0.6; letter-spacing: 2px; margin-bottom: 8px; display: block; color: var(--accent); }
+        .countdown-timer { font-family: 'Cinzel', serif; font-size: 2.2rem; color: var(--gold); font-weight: 700; letter-spacing: 3px; }
 
         .stats-bar { display: flex; justify-content: space-around; margin: 15px 0; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 10px; border: 1px solid var(--glass-border); }
         .stat-item { text-align: center; }
@@ -85,7 +84,7 @@
         .kaza-done-btn { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; cursor: pointer; font-weight: 600; }
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 18, 32, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); }
-        .modal { background: var(--marine-deep); border: 2px solid var(--gold); padding: 30px; border-radius: 30px; text-align: center; max-width: 85%; }
+        .modal { background: var(--marine-deep); border: 2px solid var(--gold); padding: 35px 25px; border-radius: 30px; text-align: center; max-width: 85%; }
         
         .btn-gold { background: var(--gold); color: var(--marine-deep); padding: 14px; border-radius: 15px; font-weight: 600; border: none; width: 100%; margin-top: 10px; cursor: pointer; }
         .search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; }
@@ -101,15 +100,15 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        const APP_VERSION = "1.1.9";
-        const STORAGE_KEY = 'salah_quest_v19_final';
+        const APP_VERSION = "1.2.0";
+        const STORAGE_KEY = 'salah_quest_v20_active';
         const PRAYER_MAP = { 'Fajr': 'Sabah', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
         const COUNTRIES = [{ n: "Türkiye", v: "Turkey" }, { n: "Hollanda", v: "Netherlands" }, { n: "Almanya", v: "Germany" }];
 
         function App() {
-            const [setupStep, setSetupStep] = useState( setupStepVal() );
+            const [setupStep, setSetupStep] = useState(1);
             const [location, setLocation] = useState({ city: '', country: '', countryName: '' });
             const [isConfigured, setIsConfigured] = useState(false);
             const [prayerTimes, setPrayerTimes] = useState(null);
@@ -120,9 +119,7 @@
             const [searchQuery, setSearchQuery] = useState("");
             const [showDropdown, setShowDropdown] = useState(false);
             const [cities, setCities] = useState([]);
-            const [timeLeft, setTimeLeft] = useState("");
-
-            function setupStepVal() { return 1; }
+            const [timeLeft, setTimeLeft] = useState("00:00:00");
 
             const updateStorage = useCallback((loc, st, comp, kaza, times = prayerTimes) => {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -146,6 +143,52 @@
                 return null;
             };
 
+            // Canlı Geri Sayım Mantığı
+            useEffect(() => {
+                if (!prayerTimes) return;
+
+                const getTarget = () => {
+                    const now = new Date();
+                    const todayStr = now.toDateString();
+
+                    // Vakitlerin çıkış (bitiş) zamanlarını tanımla
+                    const milestones = [
+                        { name: 'Sabah', time: prayerTimes['Sunrise'] },
+                        { name: 'Öğle', time: prayerTimes['Asr'] },
+                        { name: 'İkindi', time: prayerTimes['Maghrib'] },
+                        { name: 'Akşam', time: prayerTimes['Isha'] },
+                        { name: 'Yatsı', time: '23:59' }
+                    ];
+
+                    for (const m of milestones) {
+                        const [h, min] = m.time.split(':');
+                        const target = new Date(); target.setHours(parseInt(h), parseInt(min), 0, 0);
+                        if (now < target) return target;
+                    }
+                    
+                    // Gece yarısından sonra İmsak'a kadar olan süre
+                    const [ih, imin] = prayerTimes['Fajr'].split(':');
+                    const imsak = new Date(); imsak.setDate(imsak.getDate() + 1);
+                    imsak.setHours(parseInt(ih), parseInt(imin), 0, 0);
+                    return imsak;
+                };
+
+                const interval = setInterval(() => {
+                    const now = new Date();
+                    const target = getTarget();
+                    const diff = target - now;
+
+                    if (diff > 0) {
+                        const hours = Math.floor(diff / 3600000);
+                        const mins = Math.floor((diff % 3600000) / 60000);
+                        const secs = Math.floor((diff % 60000) / 1000);
+                        setTimeLeft(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+                    }
+                }, 1000);
+
+                return () => clearInterval(interval);
+            }, [prayerTimes]);
+
             const performKazaCheck = useCallback((currentTimes, currentComp, currentKaza) => {
                 if (!currentTimes) return { updatedKaza: currentKaza, changed: false };
                 const now = new Date();
@@ -156,6 +199,7 @@
                 PRAYER_ORDER.forEach((key, index) => {
                     const pName = PRAYER_MAP[key];
                     let expiryStr = (key === 'Fajr') ? currentTimes['Sunrise'] : (index < PRAYER_ORDER.length - 1 ? currentTimes[PRAYER_ORDER[index+1]] : "23:59");
+                    
                     if (expiryStr) {
                         const [h, m] = expiryStr.split(':');
                         const expiry = new Date(); expiry.setHours(parseInt(h), parseInt(m), 0, 0);
@@ -168,43 +212,6 @@
                 return { updatedKaza, changed };
             }, []);
 
-            // Sayaç Mantığı
-            useEffect(() => {
-                if (!prayerTimes) return;
-                const timer = setInterval(() => {
-                    const now = new Date();
-                    let targetTime = null;
-
-                    for (let i = 0; i < PRAYER_ORDER.length; i++) {
-                        const key = PRAYER_ORDER[i];
-                        const [h, m] = prayerTimes[key].split(':');
-                        const pTime = new Date(); pTime.setHours(parseInt(h), parseInt(m), 0, 0);
-                        
-                        // Şu an hangi vakitteyiz? Çıkış vaktini bul
-                        if (now < pTime) {
-                            targetTime = pTime; break;
-                        } else {
-                            // Vakit içindeyiz, çıkış vaktini belirle
-                            let expiryStr = (key === 'Fajr') ? prayerTimes['Sunrise'] : (i < PRAYER_ORDER.length - 1 ? prayerTimes[PRAYER_ORDER[i+1]] : "23:59");
-                            const [eh, em] = expiryStr.split(':');
-                            const expTime = new Date(); expTime.setHours(parseInt(eh), parseInt(em), 0, 0);
-                            if (now < expTime) { targetTime = expTime; break; }
-                        }
-                    }
-
-                    if (!targetTime) { // Yatsıdan sonra gece yarısına kadar
-                        targetTime = new Date(); targetTime.setHours(23, 59, 59, 0);
-                    }
-
-                    const diff = targetTime - now;
-                    const hours = Math.floor(diff / 3600000);
-                    const mins = Math.floor((diff % 3600000) / 60000);
-                    const secs = Math.floor((diff % 60000) / 1000);
-                    setTimeLeft(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
-                }, 1000);
-                return () => clearInterval(timer);
-            }, [prayerTimes]);
-
             useEffect(() => {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
@@ -212,6 +219,7 @@
                     setLocation(data.location);
                     setStats(data.stats || { xp: 0, streak: 0, level: 1 });
                     const today = new Date().toDateString();
+                    
                     let currentTimes = (data.cachedTimes && data.cacheDate === today) ? data.cachedTimes : null;
                     if (currentTimes) setPrayerTimes(currentTimes);
                     else fetchDiyanetTimes(data.location.city, data.location.country).then(t => currentTimes = t);
@@ -305,16 +313,6 @@
                 updateStorage(location, {xp, level, streak}, newComp, newList);
             };
 
-            const handleRefreshOnlyTimes = () => {
-                fetchDiyanetTimes(location.city, location.country).then(t => {
-                    if(t) {
-                        updateStorage(location, stats, completed, kazaList, t);
-                        setPopup({ msg: "Vakitler Güncellendi! ↻" });
-                        setTimeout(() => setPopup(null), 1500);
-                    }
-                });
-            };
-
             useEffect(() => {
                 if (location.country && setupStep === 2) {
                     fetch(`https://countriesnow.space/api/v0.1/countries/cities`, {
@@ -351,7 +349,7 @@
                                     </div>
                                 )}
                             </div>
-                            <button className="btn-gold" onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country).then(t => { if(t) updateStorage(location, stats, [], [], t); }); } }}>BAŞLA</button>
+                            <button className="btn-gold" onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country).then(t => { if(t) updateStorage(location, stats, [], [], t); }); } }}>İLERİ</button>
                         </div>
                     </div>
                 );
@@ -363,7 +361,7 @@
                     <div className="glass-card">
                         <div className="top-nav">
                             <span className="version-tag">v{APP_VERSION}</span>
-                            <button className="refresh-btn" onClick={handleRefreshOnlyTimes}>↻</button>
+                            <button className="refresh-btn" onClick={() => { localStorage.removeItem(STORAGE_KEY); window.location.reload(); }}>↻</button>
                         </div>
                         <div className="header">
                             <h1 className="app-title">SALAH QUEST</h1>
@@ -372,7 +370,7 @@
 
                         <div className="countdown-container">
                             <span className="countdown-label">Vaktin çıkmasına kalan</span>
-                            <div className="countdown-timer">{timeLeft || "00:00:00"}</div>
+                            <div className="countdown-timer">{timeLeft}</div>
                         </div>
 
                         <div className="stats-bar">
@@ -380,7 +378,7 @@
                             <div className="stat-item"><span className="stat-label">Seri</span><span className="stat-value">{stats.streak} 🔥</span></div>
                             <div className="stat-item"><span className="stat-label">Tecrübe</span><span className="stat-value">{stats.xp}/250</span></div>
                         </div>
-
+                        
                         <div className="prayer-list">
                             {prayerTimes ? PRAYER_ORDER.map(key => {
                                 const now = new Date();
