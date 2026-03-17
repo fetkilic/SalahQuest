@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Instant Sync v1.1.7</title>
+    <title>Salah Quest | Persistent v1.1.8</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -46,7 +46,8 @@
 
         .top-nav { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 15px; }
         .version-tag { font-size: 0.6rem; color: var(--gold); padding: 3px 8px; border-radius: 8px; border: 1px solid rgba(243, 212, 122, 0.2); }
-        .refresh-btn { background: none; border: 1px solid var(--glass-border); color: var(--gold); border-radius: 8px; cursor: pointer; padding: 3px 6px; font-size: 10px; }
+        .refresh-btn { background: none; border: 1px solid var(--glass-border); color: var(--gold); border-radius: 8px; cursor: pointer; padding: 3px 6px; font-size: 10px; transition: 0.3s; }
+        .refresh-btn:active { transform: rotate(180deg); background: rgba(255,255,255,0.1); }
 
         .header { text-align: center; margin-bottom: 20px; }
         .app-title { font-family: 'Cinzel', serif; color: var(--gold); letter-spacing: 2px; margin: 0; font-size: 1.5rem; text-shadow: 0 0 10px rgba(243, 212, 122, 0.3); }
@@ -85,7 +86,7 @@
         .btn-gold { background: var(--gold); color: var(--marine-deep); padding: 14px; border-radius: 15px; font-weight: 600; border: none; width: 100%; margin-top: 10px; cursor: pointer; }
         .search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; }
         .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; }
-        .dropdown-item { padding: 12px 15px; cursor: pointer; }
+        .dropdown-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .lvl-container { margin-top: 10px; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
         .lvl-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s; }
     </style>
@@ -96,8 +97,8 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        const APP_VERSION = "1.1.7";
-        const STORAGE_KEY = 'salah_quest_v17_instant_sync';
+        const APP_VERSION = "1.1.8";
+        const STORAGE_KEY = 'salah_quest_v18_persistent';
         const PRAYER_MAP = { 'Fajr': 'Sabah', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -134,7 +135,7 @@
                         setPrayerTimes(data.data.timings);
                         return data.data.timings;
                     }
-                } catch (err) { console.error("API Error"); }
+                } catch (err) { console.error("API Hatası"); }
                 return null;
             };
 
@@ -168,6 +169,7 @@
                     setLocation(data.location);
                     setStats(data.stats || { xp: 0, streak: 0, level: 1 });
                     const today = new Date().toDateString();
+                    
                     let currentTimes = (data.cachedTimes && data.cacheDate === today) ? data.cachedTimes : null;
                     if (currentTimes) setPrayerTimes(currentTimes);
                     else fetchDiyanetTimes(data.location.city, data.location.country).then(t => currentTimes = t);
@@ -229,9 +231,7 @@
                     let earnedXp = (key === 'Fajr') ? (isVaktiGecti ? 1 : 100) : (isVaktiGecti ? 1 : 50);
                     
                     newComp.push(pName); xp += earnedXp;
-                    // KESİN SENKRONİZASYON: Listeden anında uçur
                     newKaza = newKaza.filter(k => k !== kazaId);
-                    
                     if (newComp.length === 5) { setPopup({ msg: "MAŞALLAH! 🎉\nGünü tamamladın." }); streak++; }
                 } else {
                     newComp = newComp.filter(i => i !== pName);
@@ -261,6 +261,16 @@
                 }
                 setKazaList(newList); setCompleted(newComp); setStats({xp, level, streak});
                 updateStorage(location, {xp, level, streak}, newComp, newList);
+            };
+
+            const handleRefreshOnlyTimes = () => {
+                fetchDiyanetTimes(location.city, location.country).then(t => {
+                    if(t) {
+                        updateStorage(location, stats, completed, kazaList, t);
+                        setPopup({ msg: "Vakitler Güncellendi! ↻" });
+                        setTimeout(() => setPopup(null), 1500);
+                    }
+                });
             };
 
             useEffect(() => {
@@ -299,7 +309,7 @@
                                     </div>
                                 )}
                             </div>
-                            <button className="btn-gold" onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country).then(t => { if(t) updateStorage(location, stats, [], [], t); }); } }}>İLERİ</button>
+                            <button className="btn-gold" onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country).then(t => { if(t) updateStorage(location, stats, [], [], t); }); } }}>BAŞLA</button>
                         </div>
                     </div>
                 );
@@ -309,7 +319,10 @@
                 <div>
                     {popup && <div className="overlay" onClick={() => setPopup(null)}><div className="modal"><h2>{popup.msg}</h2></div></div>}
                     <div className="glass-card">
-                        <div className="top-nav"><span className="version-tag">v{APP_VERSION}</span><button className="refresh-btn" onClick={() => { localStorage.removeItem(STORAGE_KEY); window.location.reload(); }}>↻</button></div>
+                        <div className="top-nav">
+                            <span className="version-tag">v{APP_VERSION}</span>
+                            <button className="refresh-btn" onClick={handleRefreshOnlyTimes} title="Vakitleri Yenile">↻</button>
+                        </div>
                         <div className="header"><h1 className="app-title">SALAH QUEST</h1>
                             <div className="lvl-container"><div className="lvl-fill" style={{width: `${(stats.xp / 250) * 100}%`}}></div></div>
                         </div>
@@ -344,6 +357,11 @@
                             </div>
                         </div>
                     </div>
+                    <center>
+                        <button className="btn" style={{background:'transparent', color:'rgba(255,255,255,0.1)', fontSize:'9px', marginTop:'20px'}} onClick={() => { if(confirm("UYARI: Tüm ilerlemeniz, mertebeniz ve kaza listeniz tamamen silinecek. Emin misiniz?")) { localStorage.clear(); window.location.reload(); } }}>
+                            TÜM VERİLERİ SIFIRLA
+                        </button>
+                    </center>
                 </div>
             );
         }
