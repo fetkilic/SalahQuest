@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Ultimate v1.2.3</title>
+    <title>Salah Quest | Instant Sync v1.2.4</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -51,7 +51,6 @@
         .header { text-align: center; margin-bottom: 20px; }
         .app-title { font-family: 'Cinzel', serif; color: var(--gold); letter-spacing: 2px; margin: 0; font-size: 1.5rem; text-shadow: 0 0 10px rgba(243, 212, 122, 0.3); }
         
-        /* Sayaç Tasarımı */
         .countdown-container { text-align: center; margin-bottom: 20px; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 15px; border: 1px solid rgba(243, 212, 122, 0.15); }
         .countdown-label { font-size: 0.65rem; text-transform: uppercase; opacity: 0.7; letter-spacing: 2px; margin-bottom: 5px; display: block; color: var(--accent); }
         .countdown-timer { font-family: 'Cinzel', serif; font-size: 2.1rem; color: var(--gold); font-weight: 700; letter-spacing: 2px; }
@@ -61,7 +60,6 @@
         .stat-value { display: block; color: var(--gold); font-weight: 600; font-size: 1.1rem; }
         .stat-label { font-size: 0.6rem; text-transform: uppercase; opacity: 0.7; }
 
-        /* Namaz Kartları UI */
         .prayer-list { display: flex; flex-direction: column; gap: 12px; }
         .prayer-card {
             display: flex; align-items: center; justify-content: space-between;
@@ -71,13 +69,9 @@
         .prayer-card.completed { border-color: var(--gold); background: rgba(243, 212, 122, 0.15); }
         .prayer-card.locked { opacity: 0.25; border: 1px dashed var(--glass-border); cursor: not-allowed; }
         
-        .check-btn {
-            width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--gold);
-            display: flex; align-items: center; justify-content: center;
-        }
+        .check-btn { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; }
         .completed .check-btn { background: var(--gold); color: var(--marine-deep); font-weight: bold; }
 
-        /* Kaza Bölümü */
         .kaza-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
         .section-title { font-size: 0.9rem; color: var(--gold); margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .kaza-item { 
@@ -89,10 +83,9 @@
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 18, 32, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); }
         .modal { background: var(--marine-deep); border: 2px solid var(--gold); padding: 35px 25px; border-radius: 30px; text-align: center; max-width: 85%; }
         
-        /* Kurulum Ekranı */
         .search-container { position: relative; width: 100%; margin-bottom: 15px; }
         input.search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; font-size: 14px; }
-        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; }
         .dropdown-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .btn-gold { background: var(--gold); color: var(--marine-deep); padding: 14px; border-radius: 15px; font-weight: 600; border: none; width: 100%; cursor: pointer; }
         
@@ -106,12 +99,11 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        const APP_VERSION = "1.2.3";
-        const STORAGE_KEY = 'salah_quest_v23_final';
+        const APP_VERSION = "1.2.4";
+        const STORAGE_KEY = 'salah_quest_v24_instant';
         const PRAYER_MAP = { 'Fajr': 'Sabah', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-
-        const COUNTRIES = [{ n: "Türkiye", v: "Turkey" }, { n: "Hollanda", v: "Netherlands" }, { n: "Almanya", v: "Germany" }, { n: "Belçika", v: "Belgium" }];
+        const COUNTRIES = [{ n: "Hollanda", v: "Netherlands" }, { n: "Türkiye", v: "Turkey" }, { n: "Almanya", v: "Germany" }];
 
         function App() {
             const [setupStep, setSetupStep] = useState(1);
@@ -135,19 +127,7 @@
                 }));
             }, []);
 
-            const fetchDiyanetTimes = async (city, country) => {
-                try {
-                    const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13&school=0`);
-                    const data = await res.json();
-                    if (data.data) {
-                        setPrayerTimes(data.data.timings);
-                        return data.data.timings;
-                    }
-                } catch (err) { console.error("API Error"); }
-                return null;
-            };
-
-            // Kaza Kontrol Motoru
+            // Kaza Denetleme Fonksiyonu (Hızlandırılmış)
             const performKazaCheck = useCallback((currentTimes, currentComp, currentKaza) => {
                 if (!currentTimes) return { updatedKaza: currentKaza, changed: false };
                 const now = new Date();
@@ -163,7 +143,6 @@
                         const [h, m] = expiryStr.split(':');
                         const expiry = new Date(); expiry.setHours(parseInt(h), parseInt(m), 0, 0);
                         const kazaId = `${todayStr} ${pName}`;
-                        
                         if (now > expiry && !currentComp.includes(pName) && !updatedKaza.includes(kazaId)) {
                             updatedKaza.push(kazaId); changed = true;
                         }
@@ -172,7 +151,13 @@
                 return { updatedKaza, changed };
             }, []);
 
-            // Geri Sayım Motoru
+            const fetchDiyanetTimes = async (city, country) => {
+                const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13`);
+                const data = await res.json();
+                if (data.data) { setPrayerTimes(data.data.timings); return data.data.timings; }
+            };
+
+            // Sayaç ve Eşzamanlı Kaza Kontrolü
             useEffect(() => {
                 if (!prayerTimes) return;
                 const tick = () => {
@@ -183,12 +168,9 @@
                         d.setHours(parseInt(h), parseInt(m), 0, 0); return d;
                     };
                     const milestones = [
-                        createDate(prayerTimes.Sunrise),
-                        createDate(prayerTimes.Asr),
-                        createDate(prayerTimes.Maghrib),
-                        createDate(prayerTimes.Isha),
-                        createDate('23:59'),
-                        createDate(prayerTimes.Fajr, 1)
+                        createDate(prayerTimes.Sunrise), createDate(prayerTimes.Asr),
+                        createDate(prayerTimes.Maghrib), createDate(prayerTimes.Isha),
+                        createDate('23:59'), createDate(prayerTimes.Fajr, 1)
                     ];
                     const target = milestones.find(m => m > now);
                     const diff = target - now;
@@ -196,10 +178,17 @@
                     const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
                     const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
                     setTimeLeft(`${h}:${m}:${s}`);
+
+                    // Kritik: Sayaç her saniye akarken kazayı da kontrol et (Gecikme sıfırlandı)
+                    const check = performKazaCheck(prayerTimes, completed, kazaList);
+                    if (check.changed) {
+                        setKazaList(check.updatedKaza);
+                        updateStorage(location, stats, completed, check.updatedKaza);
+                    }
                 };
                 const timer = setInterval(tick, 1000); tick();
                 return () => clearInterval(timer);
-            }, [prayerTimes]);
+            }, [prayerTimes, completed, kazaList, location, stats, performKazaCheck, updateStorage]);
 
             useEffect(() => {
                 const saved = localStorage.getItem(STORAGE_KEY);
@@ -209,32 +198,12 @@
                     setStats(data.stats || { xp: 0, streak: 0, level: 1 });
                     setKazaList(data.kazaList || []);
                     const today = new Date().toDateString();
-                    
                     if (data.cachedTimes && data.cacheDate === today) setPrayerTimes(data.cachedTimes);
                     else fetchDiyanetTimes(data.location.city, data.location.country);
-
-                    let currentComp = (data.completedToday?.date === today) ? data.completedToday.list : [];
-                    if (data.completedToday?.date && data.completedToday.date !== today) {
-                        const check = performKazaCheck(data.cachedTimes, data.completedToday.list, data.kazaList || []);
-                        setKazaList(check.updatedKaza);
-                        currentComp = [];
-                    }
-                    setCompleted(currentComp); setIsConfigured(true);
+                    setCompleted(data.completedToday?.date === today ? data.completedToday.list : []);
+                    setIsConfigured(true);
                 }
-            }, [performKazaCheck]);
-
-            // Rutin Kaza Kontrolü (10sn)
-            useEffect(() => {
-                if (!prayerTimes || !isConfigured) return;
-                const interval = setInterval(() => {
-                    const check = performKazaCheck(prayerTimes, completed, kazaList);
-                    if (check.changed) {
-                        setKazaList(check.updatedKaza);
-                        updateStorage(location, stats, completed, check.updatedKaza);
-                    }
-                }, 10000);
-                return () => clearInterval(interval);
-            }, [prayerTimes, completed, kazaList, isConfigured, performKazaCheck, location, stats, updateStorage]);
+            }, []);
 
             const isVakitGirdi = (key) => {
                 if (!prayerTimes) return false;
@@ -260,9 +229,7 @@
                     const expiry = new Date(); expiry.setHours(parseInt(eh), parseInt(em), 0, 0);
                     let gain = (key === 'Fajr') ? (now > expiry ? 1 : 100) : (now > expiry ? 1 : 50);
                     xp += gain;
-                } else {
-                    xp = Math.max(0, xp - 50); // Basitleştirilmiş geri alma
-                }
+                } else { xp = Math.max(0, xp - 50); }
                 
                 if (xp >= 250) { xp -= 250; level++; }
                 const newKaza = kazaList.filter(k => k !== `${todayStr} ${pName}`);
@@ -285,7 +252,7 @@
                 updateStorage(location, {xp, level, streak}, newComp, newList);
             };
 
-            // Şehir Arama Mantığı
+            // Şehir Arama (Hücresel Veri/Yavaş İnternet Dostu)
             useEffect(() => {
                 if (location.country && setupStep === 2) {
                     fetch(`https://countriesnow.space/api/v0.1/countries/cities`, {
@@ -305,9 +272,8 @@
                     <div className="glass-card" onClick={() => setShowDropdown(false)}>
                         <h1 className="app-title">SALAH QUEST</h1>
                         <div style={{marginTop:'20px'}}>
-                            <label style={{fontSize:'0.7rem', color: 'var(--gold)', marginBottom:'5px', display:'block'}}>{setupStep === 1 ? "Ülke Seçin" : "Şehir Seçin"}</label>
                             <div className="search-container" onClick={e => e.stopPropagation()}>
-                                <input className="search-input" placeholder="Arayın..." value={showDropdown ? searchQuery : (setupStep === 1 ? location.countryName : location.city)} 
+                                <input className="search-input" placeholder={setupStep === 1 ? "Ülke Seçin" : "Şehir Seçin"} value={showDropdown ? searchQuery : (setupStep === 1 ? location.countryName : location.city)} 
                                     onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
                                     onFocus={() => { setSearchQuery(""); setShowDropdown(true); }} />
                                 {showDropdown && (
@@ -322,13 +288,10 @@
                                     </div>
                                 )}
                             </div>
-                            <div style={{display:'flex', gap:'10px'}}>
-                                {setupStep === 2 && <button className="btn-gold" style={{background:'rgba(255,255,255,0.1)', color:'white'}} onClick={() => setSetupStep(1)}>Geri</button>}
-                                <button className="btn-gold" onClick={() => { 
-                                    if(setupStep === 1 && location.country) setSetupStep(2); 
-                                    else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country).then(t => updateStorage(location, stats, [], [], t)); }
-                                }}>{setupStep === 1 ? "İleri" : "Başla"}</button>
-                            </div>
+                            <button className="btn-gold" onClick={() => { 
+                                if(setupStep === 1 && location.country) setSetupStep(2); 
+                                else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country).then(t => updateStorage(location, stats, [], [], t)); }
+                            }}>{setupStep === 1 ? "İLERİ" : "BAŞLA"}</button>
                         </div>
                     </div>
                 );
@@ -341,18 +304,15 @@
                         <div className="top-nav"><span className="version-tag">v{APP_VERSION}</span><button className="refresh-btn" onClick={() => { fetchDiyanetTimes(location.city, location.country); setPopup({msg:"Güncellendi!"}); setTimeout(()=>setPopup(null),1000); }}>↻</button></div>
                         <h1 className="app-title">SALAH QUEST</h1>
                         <div className="lvl-container"><div className="lvl-fill" style={{width: `${(stats.xp / 250) * 100}%`}}></div></div>
-                        
                         <div className="countdown-container">
                             <span className="countdown-label">Vaktin çıkmasına kalan</span>
                             <div className="countdown-timer">{timeLeft}</div>
                         </div>
-
                         <div className="stats-bar">
                             <div className="stat-item"><span className="stat-label">Mertebe</span><span className="stat-value">{stats.level}</span></div>
                             <div className="stat-item"><span className="stat-label">Seri</span><span className="stat-value">{stats.streak} 🔥</span></div>
                             <div className="stat-item"><span className="stat-label">Tecrübe</span><span className="stat-value">{stats.xp}/250</span></div>
                         </div>
-
                         <div className="prayer-list">
                             {prayerTimes && PRAYER_ORDER.map(key => {
                                 const active = isVakitGirdi(key) || completed.includes(PRAYER_MAP[key]);
@@ -364,7 +324,6 @@
                                 );
                             })}
                         </div>
-
                         <div className="kaza-section">
                             <div className="section-title">⏳ Kaza Listesi ({kazaList.length})</div>
                             {kazaList.map((item, idx) => (
@@ -375,7 +334,7 @@
                             ))}
                         </div>
                     </div>
-                    <center><button style={{background:'transparent', color:'rgba(255,255,255,0.1)', border:'none', fontSize:'9px', cursor:'pointer'}} onClick={() => {if(confirm("Sıfırlansın mı?")) {localStorage.removeItem(STORAGE_KEY); window.location.reload();}}}>SİSTEMİ SIFIRLA</button></center>
+                    <center><button style={{background:'transparent', color:'rgba(255,255,255,0.05)', border:'none', fontSize:'9px'}} onClick={() => {if(confirm("Sıfırlansın mı?")) {localStorage.removeItem(STORAGE_KEY); window.location.reload();}}}>SİSTEMİ SIFIRLA</button></center>
                 </div>
             );
         }
