@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest | Diyanet Uyumlu</title>
+    <title>Namaz Takip</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -34,12 +34,20 @@
             display: flex; justify-content: center; min-height: 100vh; padding: 15px; box-sizing: border-box;
         }
 
-        #root { width: 100%; max-width: 450px; }
+        #root { width: 100%; max-width: 450px; position: relative; }
 
         .glass-card {
+            position: relative;
             background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border); border-radius: 30px; padding: 25px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); margin-bottom: 20px;
+        }
+
+        .version-tag {
+            position: absolute; top: 20px; right: 25px;
+            font-size: 0.6rem; background: rgba(243, 212, 122, 0.15); color: var(--gold);
+            padding: 3px 8px; border-radius: 8px; font-weight: 600; letter-spacing: 1px;
+            border: 1px solid rgba(243, 212, 122, 0.2);
         }
 
         .header { text-align: center; margin-bottom: 20px; }
@@ -94,7 +102,8 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        const STORAGE_KEY = 'salah_quest_v2_diyanet';
+        const APP_VERSION = "1.0.2";
+        const STORAGE_KEY = 'salah_quest_v2_final';
         const PRAYER_MAP = { 'Fajr': 'İmsak', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         const PRAYER_KEYS = Object.keys(PRAYER_MAP);
 
@@ -131,15 +140,14 @@
 
             const fetchDiyanetTimes = async (city, country) => {
                 try {
-                    // Method 13 = Diyanet
-                    // School 0 = Standard (Shafi/Diyanet Ikindi vakti için bu gereklidir)
+                    // Method 13 (Diyanet) & School 0 (Standart/Shafi - Diyanet uyumu için)
                     const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13&school=0`);
                     const data = await res.json();
                     if (data.data) {
                         setPrayerTimes(data.data.timings);
                     }
                 } catch (err) {
-                    alert("Vakitler alınamadı. Konum bilgilerini kontrol edin.");
+                    alert("Vakitler alınamadı. Lütfen internetinizi veya konumunuzu kontrol edin.");
                 }
             };
 
@@ -186,24 +194,25 @@
             if (!isConfigured) {
                 return (
                     <div className="glass-card">
+                        <div className="version-tag">v{APP_VERSION}</div>
                         <div className="header">
                             <h1 className="app-title">SALAH QUEST</h1>
-                            <p style={{fontSize:'0.8rem', opacity:0.7}}>Diyanet Uyumlu Takip</p>
+                            <p style={{fontSize:'0.8rem', opacity:0.7}}>Manevi Yolculuk Takibi</p>
                         </div>
                         
                         {setupStep === 1 ? (
                             <div className="setup-step">
-                                <label style={{fontSize:'0.85rem', color: 'var(--gold)'}}>Hangi Ülkedesin?</label>
+                                <label style={{fontSize:'0.85rem', color: 'var(--gold)'}}>Ülke Seçin</label>
                                 <input placeholder="Örn: Netherlands" value={location.country} onChange={e => setLocation({...location, country: e.target.value})} />
                                 <button className="btn btn-gold" onClick={() => location.country && setSetupStep(2)}>İLERİ</button>
                             </div>
                         ) : (
                             <div className="setup-step">
-                                <label style={{fontSize:'0.85rem', color: 'var(--gold)'}}>{location.country} - Hangi Şehir?</label>
+                                <label style={{fontSize:'0.85rem', color: 'var(--gold)'}}>{location.country} - Şehir Seçin</label>
                                 <input placeholder="Örn: Dordrecht" autoFocus value={location.city} onChange={e => setLocation({...location, city: e.target.value})} />
                                 <div style={{display:'flex', gap:'10px'}}>
                                     <button className="btn" style={{background:'rgba(255,255,255,0.1)', color:'white'}} onClick={() => setSetupStep(1)}>GERİ</button>
-                                    <button className="btn btn-gold" onClick={() => { if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>BAŞLA</button>
+                                    <button className="btn btn-gold" onClick={() => { if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>YOLCULUĞA BAŞLA</button>
                                 </div>
                             </div>
                         )}
@@ -214,6 +223,7 @@
             return (
                 <div>
                     <div className="glass-card">
+                        <div className="version-tag">v{APP_VERSION}</div>
                         <div className="header">
                             <h1 className="app-title">SALAH QUEST</h1>
                             <div className="lvl-container">
@@ -243,14 +253,14 @@
                                         {completed.includes(PRAYER_MAP[key]) ? '✓' : ''}
                                     </div>
                                 </div>
-                            )) : <div className="loading">Vakitler Diyanet'ten alınıyor...</div>}
+                            )) : <div className="loading">Diyanet vakitleri senkronize ediliyor...</div>}
                         </div>
                     </div>
 
-                    <div style={{textAlign:'center'}}>
+                    <div style={{textAlign:'center', paddingBottom:'20px'}}>
                         <button className="btn" style={{background:'transparent', color:'rgba(255,255,255,0.3)', fontSize:'10px'}} 
                             onClick={() => {if(confirm("Tüm ilerleme sıfırlansın mı?")) {localStorage.removeItem(STORAGE_KEY); window.location.reload();}}}>
-                            KONUMU VE VERİLERİ SIFIRLA
+                            AYARLARI VE KONUMU SIFIRLA
                         </button>
                     </div>
                 </div>
