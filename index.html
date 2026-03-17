@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Salah Quest</title>
+    <title>Salah Quest | v1.1.0</title>
     
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/fetkilic/KazaRehberi/refs/heads/main/logo.jpg">
@@ -56,7 +56,7 @@
         .stat-value { display: block; color: var(--gold); font-weight: 600; font-size: 1.1rem; }
         .stat-label { font-size: 0.6rem; text-transform: uppercase; opacity: 0.7; }
 
-        .countdown-box { text-align: center; padding: 20px; border-radius: 20px; background: linear-gradient(180deg, rgba(0, 119, 190, 0.2) 0%, transparent 100%); margin-bottom: 20px; border: 1px solid rgba(0, 119, 190, 0.3); }
+        .countdown-box { text-align: center; padding: 15px; border-radius: 20px; background: linear-gradient(180deg, rgba(0, 119, 190, 0.2) 0%, transparent 100%); margin-bottom: 20px; border: 1px solid rgba(0, 119, 190, 0.3); }
         .timer { font-size: 2.2rem; font-weight: 300; color: var(--accent); }
 
         .prayer-list { display: flex; flex-direction: column; gap: 12px; }
@@ -66,7 +66,7 @@
             border: 1px solid var(--glass-border); transition: 0.3s ease; cursor: pointer;
         }
         .prayer-card.completed { border-color: var(--gold); background: rgba(243, 212, 122, 0.15); }
-        .prayer-card.locked { opacity: 0.5; border-style: dashed; }
+        .prayer-card.locked { opacity: 0.4; border-style: dashed; }
         
         .check-btn {
             width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--gold);
@@ -74,21 +74,27 @@
         }
         .completed .check-btn { background: var(--gold); color: var(--marine-deep); font-weight: bold; }
 
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 18, 32, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); padding: 20px; }
-        .modal { background: var(--marine-deep); border: 2px solid var(--gold); padding: 40px 25px; border-radius: 30px; text-align: center; max-width: 90%; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .kaza-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
+        .section-title { font-size: 0.9rem; color: var(--gold); margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .kaza-list { max-height: 250px; overflow-y: auto; }
+        .kaza-item { 
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.15);
+            padding: 12px 15px; border-radius: 15px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+        }
+        .kaza-done-btn { background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; cursor: pointer; font-weight: 600; }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 18, 32, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); }
+        .modal { background: var(--marine-deep); border: 2px solid var(--gold); padding: 35px 25px; border-radius: 30px; text-align: center; max-width: 85%; animation: popIn 0.4s ease; }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .btn { width: 100%; padding: 14px; border-radius: 15px; font-weight: 600; border: none; cursor: pointer; margin-top: 10px; }
-        .btn-gold { background: var(--gold); color: var(--marine-deep); }
+        .btn-gold { background: var(--gold); color: var(--marine-deep); padding: 14px; border-radius: 15px; font-weight: 600; border: none; width: 100%; margin-top: 10px; cursor: pointer; }
         
         .lvl-container { margin-top: 10px; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
         .lvl-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s; }
 
-        .search-container { position: relative; width: 100%; }
-        input.search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; font-size: 14px; box-sizing: border-box; }
-        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; }
+        .search-input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; }
+        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background: var(--marine-deep); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 1000; margin-top: 5px; }
         .dropdown-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .dropdown-item:hover { background: var(--gold); color: var(--marine-deep); }
     </style>
 </head>
 <body>
@@ -97,8 +103,8 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        const APP_VERSION = "1.0.7";
-        const STORAGE_KEY = 'salah_quest_marine_final_v7';
+        const APP_VERSION = "1.1.0";
+        const STORAGE_KEY = 'salah_quest_kaza_system_v10';
         const PRAYER_MAP = { 'Fajr': 'İmsak', 'Dhuhr': 'Öğle', 'Asr': 'İkindi', 'Maghrib': 'Akşam', 'Isha': 'Yatsı' };
         
         const MOTIVATIONS = [
@@ -123,6 +129,7 @@
             const [isConfigured, setIsConfigured] = useState(false);
             const [prayerTimes, setPrayerTimes] = useState(null);
             const [completed, setCompleted] = useState([]);
+            const [kazaList, setKazaList] = useState([]);
             const [stats, setStats] = useState({ xp: 0, streak: 0, level: 1 });
             const [nextSalah, setNextSalah] = useState({ name: '--', time: null });
             const [countdown, setCountdown] = useState('--:--:--');
@@ -134,19 +141,45 @@
                     const data = JSON.parse(saved);
                     setLocation(data.location);
                     setStats(data.stats || { xp: 0, streak: 0, level: 1 });
+                    setKazaList(data.kazaList || []);
+                    
                     const today = new Date().toDateString();
-                    setCompleted(data.completedToday?.date === today ? data.completedToday.list : []);
+                    const lastDate = data.completedToday?.date;
+
+                    // GÜN DEĞİŞİMİ: Kaza Listesine Aktar
+                    if (lastDate && lastDate !== today) {
+                        const missed = [];
+                        Object.values(PRAYER_MAP).forEach(pName => {
+                            if (!data.completedToday.list.includes(pName)) {
+                                missed.push({ date: lastDate, name: pName });
+                            }
+                        });
+                        const newKazaList = [...missed.map(m => `${m.date} ${m.name}`), ...(data.kazaList || [])];
+                        setKazaList(newKazaList);
+                        setCompleted([]);
+                        updateStorage(data.location, data.stats, [], newKazaList);
+                    } else {
+                        setCompleted(data.completedToday?.list || []);
+                    }
                     setIsConfigured(true);
                     fetchDiyanetTimes(data.location.city, data.location.country);
                 }
             }, []);
+
+            const updateStorage = (loc, st, comp, kaza) => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    location: loc, stats: st,
+                    completedToday: { date: new Date().toDateString(), list: comp },
+                    kazaList: kaza
+                }));
+            };
 
             const fetchDiyanetTimes = async (city, country) => {
                 try {
                     const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=13&school=0`);
                     const data = await res.json();
                     if (data.data) setPrayerTimes(data.data.timings);
-                } catch (err) { console.error("API Hatası"); }
+                } catch (err) { console.error(err); }
             };
 
             useEffect(() => {
@@ -155,8 +188,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ country: location.country })
-                    })
-                    .then(res => res.json()).then(res => setCities(res.data || []));
+                    }).then(res => res.json()).then(res => setCities(res.data || []));
                 }
             }, [location.country, setupStep]);
 
@@ -177,11 +209,10 @@
                 return () => clearInterval(timer);
             }, [prayerTimes]);
 
-            const isVakitGirdi = (vakitKey) => {
+            const isVakitGirdi = (key) => {
                 if (!prayerTimes) return false;
-                const [h, m] = prayerTimes[vakitKey].split(':');
-                const target = new Date();
-                target.setHours(parseInt(h), parseInt(m), 0, 0);
+                const [h, m] = prayerTimes[key].split(':');
+                const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0, 0);
                 return new Date() >= target;
             };
 
@@ -190,7 +221,6 @@
                 let newComp = [...completed];
                 let {xp, level, streak} = stats;
 
-                // Vakit kontrolü (Geri alma işleminde kontrol gerekmez)
                 if (!completed.includes(name) && !isVakitGirdi(key)) {
                     setPopup({ type: 'error', msg: "Vakit henüz girmedi! ⏳" });
                     setTimeout(() => setPopup(null), 2000);
@@ -204,20 +234,29 @@
                     newComp.push(name);
                     xp += 50;
                     if (newComp.length === 5) {
-                        setPopup({ type: 'full', msg: "TEBRİKLER! 🎉\nGünün tüm vakitlerini tamamladın. Maneviyatın zirvesindesin!" });
+                        setPopup({ type: 'full', msg: "TEBRİKLER! 🎉\nGünü tüm vakitlerle taçlandırdın." });
+                        streak++;
                     } else {
                         setPopup({ type: 'success', msg: MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)] });
-                        setTimeout(() => setPopup(null), 2500);
+                        setTimeout(() => setPopup(null), 2200);
                     }
                 }
-
                 if(xp >= 250) { xp = 0; level++; }
-                if(newComp.length === 5 && !completed.includes(name)) streak++;
-                
                 setStats({xp, level, streak}); setCompleted(newComp);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    location, stats: {xp, level, streak}, completedToday: { date: new Date().toDateString(), list: newComp }
-                }));
+                updateStorage(location, {xp, level, streak}, newComp, kazaList);
+            };
+
+            const solveKaza = (idx) => {
+                const newList = [...kazaList];
+                newList.splice(idx, 1);
+                let {xp, level, streak} = stats;
+                xp += 1; // Kaza başına 1 XP
+                if(xp >= 250) { xp = 0; level++; }
+                setKazaList(newList);
+                setStats({xp, level, streak});
+                updateStorage(location, {xp, level, streak}, completed, newList);
+                setPopup({ type: 'success', msg: "Kaza telafi edildi! +1 XP" });
+                setTimeout(() => setPopup(null), 1500);
             };
 
             const filteredItems = useMemo(() => {
@@ -228,28 +267,27 @@
             if (!isConfigured) {
                 return (
                     <div className="glass-card" onClick={() => setShowDropdown(false)}>
-                        <div className="top-nav"><span className="version-tag">v{APP_VERSION}</span><button className="refresh-btn" onClick={() => window.location.reload(true)}>↻ Yenile</button></div>
+                        <div className="version-tag">v{APP_VERSION}</div>
                         <div className="header"><h1 className="app-title">SALAH QUEST</h1></div>
                         <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
-                            <input className="search-input" placeholder={setupStep === 1 ? "Ülke seçin..." : "Şehir seçin..."}
-                                value={showDropdown ? searchQuery : (setupStep === 1 ? location.countryName : location.city)} 
-                                onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-                                onFocus={() => { setSearchQuery(""); setShowDropdown(true); }} />
-                            {showDropdown && (
-                                <div className="dropdown-list">
-                                    {filteredItems.map(i => (
-                                        <div key={i.v || i} className="dropdown-item" onClick={() => { 
-                                            if(setupStep === 1) setLocation({...location, country: i.v, countryName: i.n});
-                                            else setLocation({...location, city: i});
-                                            setSearchQuery(""); setShowDropdown(false);
-                                        }}>{i.n || i}</div>
-                                    ))}
-                                </div>
-                            )}
-                            <button className={`btn btn-gold ${((setupStep === 1 && !location.country) || (setupStep === 2 && !location.city)) ? 'opacity-30' : ''}`} 
-                                onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>
-                                {setupStep === 1 ? "İleri" : "Başla"}
-                            </button>
+                            <div className="search-container" onClick={e => e.stopPropagation()}>
+                                <input className="search-input" placeholder={setupStep === 1 ? "Ülke arayın..." : "Şehir arayın..."}
+                                    value={showDropdown ? searchQuery : (setupStep === 1 ? location.countryName : location.city)} 
+                                    onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                                    onFocus={() => { setSearchQuery(""); setShowDropdown(true); }} />
+                                {showDropdown && (
+                                    <div className="dropdown-list">
+                                        {filteredItems.map(i => (
+                                            <div key={i.v || i} className="dropdown-item" onClick={() => { 
+                                                if(setupStep === 1) setLocation({...location, country: i.v, countryName: i.n});
+                                                else setLocation({...location, city: i});
+                                                setSearchQuery(""); setShowDropdown(false);
+                                            }}>{i.n || i}</div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <button className="btn-gold" onClick={() => { if(setupStep === 1 && location.country) setSetupStep(2); else if(location.city) { setIsConfigured(true); fetchDiyanetTimes(location.city, location.country); } }}>{setupStep === 1 ? "İLERİ" : "BAŞLA"}</button>
                         </div>
                     </div>
                 );
@@ -257,16 +295,9 @@
 
             return (
                 <div>
-                    {popup && (
-                        <div className="overlay" onClick={() => setPopup(null)}>
-                            <div className="modal" style={{borderColor: popup.type === 'error' ? 'var(--error)' : 'var(--gold)'}}>
-                                <h2 style={{whiteSpace: 'pre-line'}}>{popup.msg}</h2>
-                                {popup.type === 'full' && <button className="btn btn-gold" style={{marginTop:'20px'}}>Devam Et</button>}
-                            </div>
-                        </div>
-                    )}
+                    {popup && <div className="overlay" onClick={() => setPopup(null)}><div className="modal" style={{borderColor: popup.type==='error'?'var(--error)':'var(--gold)'}}><h2 style={{whiteSpace: 'pre-line'}}>{popup.msg}</h2></div></div>}
                     <div className="glass-card">
-                        <div className="top-nav"><span className="version-tag">v{APP_VERSION}</span><button className="refresh-btn" onClick={() => window.location.reload(true)}>↻ Yenile</button></div>
+                        <div className="top-nav"><span className="version-tag">v{APP_VERSION}</span><button className="refresh-btn" onClick={() => window.location.reload(true)}>↻</button></div>
                         <div className="header"><h1 className="app-title">SALAH QUEST</h1>
                             <div className="lvl-container"><div className="lvl-fill" style={{width: `${(stats.xp / 250) * 100}%`}}></div></div>
                         </div>
@@ -276,21 +307,29 @@
                             <div className="stat-item"><span className="stat-label">Tecrübe</span><span className="stat-value">{stats.xp}/250</span></div>
                         </div>
                         <div className="countdown-box"><div style={{fontSize:'0.7rem', color:'var(--gold)'}}>SIRADAKİ: {nextSalah.name}</div><div className="timer">{countdown}</div></div>
+                        
                         <div className="prayer-list">
                             {prayerTimes ? Object.keys(PRAYER_MAP).map(key => (
-                                <div key={key} 
-                                     className={`prayer-card ${completed.includes(PRAYER_MAP[key]) ? 'completed' : ''} ${!isVakitGirdi(key) && !completed.includes(PRAYER_MAP[key]) ? 'locked' : ''}`} 
-                                     onClick={() => togglePrayer(key)}>
-                                    <div className="prayer-info">
-                                        <span className="prayer-name">{PRAYER_MAP[key]} {!isVakitGirdi(key) && !completed.includes(PRAYER_MAP[key]) && "🔒"}</span>
-                                        <span className="prayer-time">{prayerTimes[key]}</span>
-                                    </div>
+                                <div key={key} className={`prayer-card ${completed.includes(PRAYER_MAP[key]) ? 'completed' : ''} ${!isVakitGirdi(key) && !completed.includes(PRAYER_MAP[key]) ? 'locked' : ''}`} onClick={() => togglePrayer(key)}>
+                                    <div className="prayer-info"><span className="prayer-name">{PRAYER_MAP[key]}</span> <small style={{opacity:0.6}}>{prayerTimes[key]}</small></div>
                                     <div className="check-btn">{completed.includes(PRAYER_MAP[key]) ? '✓' : ''}</div>
                                 </div>
-                            )) : <div style={{textAlign:'center'}}>Yükleniyor...</div>}
+                            )) : <div style={{textAlign:'center', padding:'20px'}}>Vakitler senkronize ediliyor...</div>}
+                        </div>
+
+                        <div className="kaza-section">
+                            <div className="section-title">⌛ Kaza Namazların ({kazaList.length})</div>
+                            <div className="kaza-list">
+                                {kazaList.length > 0 ? kazaList.map((item, idx) => (
+                                    <div key={idx} className="kaza-item">
+                                        <span>{item}</span>
+                                        <button className="kaza-done-btn" onClick={(e) => { e.stopPropagation(); solveKaza(idx); }}>KILINDI</button>
+                                    </div>
+                                )) : <div style={{fontSize:'0.7rem', opacity:0.5, textAlign:'center'}}>Kaza borcun yok. Maşallah! ✨</div>}
+                            </div>
                         </div>
                     </div>
-                    <center><button className="btn" style={{background:'transparent', color:'rgba(255,255,255,0.2)', fontSize:'10px'}} onClick={() => {if(confirm("Sıfırlansın mı?")) {localStorage.removeItem(STORAGE_KEY); window.location.reload();}}}>SİSTEMİ SIFIRLA</button></center>
+                    <center><button className="btn" style={{background:'transparent', color:'rgba(255,255,255,0.1)', fontSize:'10px'}} onClick={() => {if(confirm("Her şey sıfırlansın mı?")) {localStorage.removeItem(STORAGE_KEY); window.location.reload();}}}>SİSTEMİ SIFIRLA</button></center>
                 </div>
             );
         }
